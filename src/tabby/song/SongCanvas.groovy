@@ -90,9 +90,7 @@ class SongCanvas extends ResizableCanvas {
 
     void setOrientation(Boolean orient) {
         if (orientation != orient) {
-            Double var = initWidth
-            initWidth = initHeight
-            initHeight = var
+            (initWidth, initHeight) = [initHeight, initWidth]
             orientationProperty().set(orient)
             zoomDraw()
         }
