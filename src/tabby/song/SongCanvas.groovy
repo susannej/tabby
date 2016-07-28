@@ -10,15 +10,17 @@ import javafx.scene.paint.Color
 class SongCanvas extends ResizableCanvas {
 
     @FXBindable
-    Double initWidth    // width of the paper without border
+    Double initWidth            // width of the paper without border
     @FXBindable
-    Double initHeight   // height of the paper without border
+    Double initHeight           // height of the paper without border
     @FXBindable
     Double borderSize
     @FXBindable
-    String paperSize    // e.g. 'a4', 'letter' etc.
+    String paperSize            // e.g. 'a4', 'letter' etc.
     @FXBindable
-    Double zoom = 1.0   // current zoom-ratio
+    Double zoom = 1.0           // current zoom-ratio
+    @FXBindable
+    Boolean orientation = true  // true = portrait, false = landscape
 
     static def paperSizes = [
             'a4'    : [w: 2100d, h: 2970d],
@@ -26,6 +28,9 @@ class SongCanvas extends ResizableCanvas {
             'letter': [w: 2100d, h: 2794d],
             'legal' : [w: 2100d, h: 3556d]
     ]
+
+    static def PORTRAIT = true
+    static def LANDSCAPE = false
 
     void zoom(double newZoom) {
         zoom = newZoom
@@ -81,6 +86,16 @@ class SongCanvas extends ResizableCanvas {
         initWidth = paperSizes[pSize.toLowerCase()]['w']
         initHeight = paperSizes[pSize.toLowerCase()]['h']
         zoomDraw()
+    }
+
+    void setOrientation(Boolean orient) {
+        if (orientation != orient) {
+            Double var = initWidth
+            initWidth = initHeight
+            initHeight = var
+            orientationProperty().set(orient)
+            zoomDraw()
+        }
     }
 
 }

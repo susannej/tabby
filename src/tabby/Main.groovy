@@ -67,6 +67,9 @@ start {
         fxaction(id: 'zoom100', name: '100%', onAction: { songCanvas.zoom(1.0) })
         fxaction(id: 'zoom125', name: '125%', onAction: { songCanvas.zoom(1.25) })
         fxaction(id: 'zoom150', name: '150%', onAction: { songCanvas.zoom(1.5) })
+
+        fxaction(id: 'portrait', name: 'Portrait', onAction: { songCanvas.orientation = SongCanvas.PORTRAIT })
+        fxaction(id: 'landscape', name: 'Landscape', onAction: { songCanvas.orientation = SongCanvas.LANDSCAPE })
     }
 
     stage(title: "Tabby ${config.version}", width: 1024, height: 768, visible: true) {
@@ -111,6 +114,9 @@ start {
                             toggleButton(zoom100, toggleGroup: 'zoom')
                             toggleButton(zoom125, toggleGroup: 'zoom')
                             toggleButton(zoom150, toggleGroup: 'zoom')
+                            separator(orientation: Orientation.VERTICAL)
+                            toggleButton(portrait, toggleGroup: 'orient')
+                            toggleButton(landscape, toggleGroup: 'orient')
                         }
                     }
                 }
