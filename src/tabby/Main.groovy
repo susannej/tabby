@@ -2,6 +2,7 @@ package tabby
 
 import javafx.geometry.Orientation
 import tabby.song.SongCanvas
+import tabby.song.SongData
 
 /**
  * Created by susanne on 27.07.16.
@@ -10,21 +11,18 @@ import tabby.song.SongCanvas
 import static groovyx.javafx.GroovyFX.start
 
 Configuration config = Configuration.instance
+SongData song = new SongData(dirty: false)
 
 start {
 
     registerBeanFactory "songCanvas", SongCanvas
 
+    final fileChooser = fileChooser(initialDirectory: ".", title: "Songfile") {
+        filter("All-files", extensions: ["*.*"])
+        filter("TAB-files", extensions: ["*.gpx", "*.gp5", "*.gp4", "*.tabby"])
+    }
+
     actions {
-        fxaction(id: 'openAction',
-                name: 'Open',
-                onAction: { println "Open" })
-        fxaction(id: 'saveAction',
-                name: 'Save',
-                onAction: { println "Save" })
-        fxaction(id: 'saveAsAction',
-                name: 'Save As...',
-                onAction: { println "Save As ..." })
         fxaction(id: 'exitAction',
                 name: 'Exit',
                 onAction: { primaryStage.close() })
@@ -44,6 +42,34 @@ start {
                 name: 'Check',
                 onAction: { println "Check" })
 
+        fxaction(id: 'newFile', name: "New ...", icon: 'resources/icons/new.png', onAction: {})
+        fxaction(id: 'openFile', name: "Open ...", icon: 'resources/icons/open.png', onAction: {
+            def selectedFile = fileChooser.showOpenDialog(primaryStage)
+            if (selectedFile) {
+                song.read(selectedFile)
+                songCanvas.data = song
+                primaryStage.title = "Tabby ${config.version} - ${selectedFile}"
+            }
+        })
+        fxaction(id: 'saveFile', name: "Save ...", icon: 'resources/icons/save.png', onAction: {
+            if (song.filename)
+                song.writer()
+            else {
+                def selectedFile = fileChooser.showSaveDialog(primaryStage)
+                if (selectedFile) {
+                    song.write(selectedFile)
+                    primaryStage.title = "Tabby ${config.version} - ${selectedFile}"
+                }
+            }
+        })
+        fxaction(id: 'saveAsFile', name: "Save as ...", icon: 'resources/icons/save-as.png', onAction: {
+            def selectedFile = fileChooser.showSaveDialog(primaryStage)
+            if (selectedFile) {
+                song.write(selectedFile)
+                primaryStage.title = "Tabby ${config.version} - ${selectedFile}"
+            }
+        })
+
         fxaction(id: 'note1', icon: 'resources/icons/1.png', onAction: {})
         fxaction(id: 'note2', icon: 'resources/icons/2.png', onAction: {})
         fxaction(id: 'note4', icon: 'resources/icons/4.png', onAction: {})
@@ -60,6 +86,8 @@ start {
         fxaction(id: 'effectHammer', icon: 'resources/icons/effect_hammer.png', onAction: {})
         fxaction(id: 'effectSlide', icon: 'resources/icons/effect_slide.png', onAction: {})
         fxaction(id: 'effectStaccato', icon: 'resources/icons/effect_staccato.png', onAction: {})
+        fxaction(id: 'openRepeat', icon: 'resources/icons/openrepeat.png', onAction: {})
+        fxaction(id: 'closeRepeat', icon: 'resources/icons/closerepeat.png', onAction: {})
 
         fxaction(id: 'zoom25', name: '25%', onAction: { songCanvas.zoom(0.25) })
         fxaction(id: 'zoom50', name: '50%', onAction: { songCanvas.zoom(0.5) })
@@ -73,19 +101,16 @@ start {
     }
 
     stage(title: "Tabby ${config.version}", width: 1024, height: 768, visible: true) {
-        scene(stylesheets: 'theme/dark.css', fill: GROOVYBLUE) {
+        scene(/*stylesheets: 'theme/dark.css',*/ fill: GROOVYBLUE) {
             borderPane {
                 top {
                     vbox {
                         menuBar {
                             menu("File") {
-                                menuItem(openAction) {
-                                    rectangle(width: 16, height: 16, fill: RED)
-                                }
-                                menuItem(saveAction) {
-                                    graphic(circle(radius: 8, fill: BLUE))
-                                }
-                                saveAs = menuItem(saveAsAction)
+                                menuItem(newFile)
+                                menuItem(openFile)
+                                menuItem(saveFile)
+                                saveAs = menuItem(saveAsFile)
                                 separatorMenuItem()
                                 menuItem(exitAction)
                             }
@@ -103,19 +128,18 @@ start {
                             }
                         }
                         toolBar {
-                            button(openAction)
-                            button(saveAction)
+                            button(newFile, text: "")
+                            button(openFile, text: "")
+                            button(saveFile, text: "")
                             separator(orientation: Orientation.VERTICAL)
-                            button(exitAction)
-                            separator(orientation: Orientation.VERTICAL)
-                            toggleButton(zoom25, toggleGroup: 'zoom')
+                            toggleButton(zoom25, id: 'zoom25Btn', toggleGroup: 'zoom')
                             toggleButton(zoom50, toggleGroup: 'zoom')
                             toggleButton(zoom75, toggleGroup: 'zoom')
                             toggleButton(zoom100, toggleGroup: 'zoom')
                             toggleButton(zoom125, toggleGroup: 'zoom')
                             toggleButton(zoom150, toggleGroup: 'zoom')
                             separator(orientation: Orientation.VERTICAL)
-                            toggleButton(portrait, toggleGroup: 'orient')
+                            toggleButton(portrait, id: 'portraitBtn', toggleGroup: 'orient')
                             toggleButton(landscape, toggleGroup: 'orient')
                         }
                     }
@@ -135,6 +159,8 @@ start {
                         flowPane {
                             toggleButton(noteDot, toggleGroup: 'dot')
                             toggleButton(noteDoubleDot, toggleGroup: 'dot')
+                            toggleButton(openRepeat, toggleGroup: 'repeat')
+                            toggleButton(closeRepeat, toggleGroup: 'repeat')
                             toggleButton(effectBend)
                             toggleButton(effectDead)
                             toggleButton(effectGhost)
@@ -146,12 +172,13 @@ start {
                 }
                 center {
                     scrollPane {
-                        songCanvas(id: 'songCanvas', paperSize: 'A4',/*width: 2200, height: 3070,*/ borderSize: 50)
+                        songCanvas(id: 'songCanvas', paperSize: 'A4',/*width: 2200, height: 3070,*/ borderSize: 50, pageBorder: 20)
                     }
                 }
             }
         }
     }
-    songCanvas.zoom(1.0)
+    zoom25Btn.fire()
+    portraitBtn.fire()
 }
 
